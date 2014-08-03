@@ -26,7 +26,7 @@ class Chat(screen.Scene):
         self.connection = None
         self.text_color = (255,255,255)
         
-        self.internal_font = pygame.font.Font(None, 32)
+        self.internal_font = pygame.font.Font(None, 24)
         height = self.internal_font.size('Ay')[1]
         self.spacer = int(height / 2.5) + height
         self.max_length = int(540 / self.spacer)
@@ -44,7 +44,7 @@ class Chat(screen.Scene):
         self.name = d[1]
         host, port = get_connection(d)
 
-        self.connection = network.HostServer(host, port)
+        self.connection = network.HostServer(host, port, self.name)
         self.connection.start()
         if self.connection.running:
             self.wordlist.append('Welcome to your chatroom')
@@ -54,7 +54,7 @@ class Chat(screen.Scene):
         d = data.split()
         self.name = d[1]
         host, port = get_connection(d)
-        self.connection = network.Client(host, port)
+        self.connection = network.Client(host, port, self.name)
         self.connection.start()
         if self.connection.running:
             self.wordlist.append('Welcome to the chatroom')
@@ -75,16 +75,8 @@ class Chat(screen.Scene):
         if self.connection:
             data = self.connection.get()
             if data:
-                if data.startswith('@@AcceptRequest'):
-                    self.connection.send('@@Name')
-                elif data.startswith('@@Name'):
-                    self.connection.send('@@Player {0}'.format(self.name))
-                elif data.startswith('@@Player'):
-                    d = data.split()
-                    self.connection.send('{0} has join'.format(d[1]))
-                else:
-                    self.wordlist.append(data)
-                    self.render()
+                self.wordlist.append(data)
+                self.render()
         
     def render(self):
         self.renderlist = []

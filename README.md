@@ -9,8 +9,11 @@ PygameChat
 
 ##### Commands #####
 * /host name (ip) (port)
-* /client name ip (port)
+* /join name ip (port)
 
 () are optional.
 
 This is something I'm playing with. To learn networking.
+
+* TODO
+ * display user connected

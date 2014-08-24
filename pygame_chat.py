@@ -72,26 +72,27 @@ class Chat(screen.Scene):
         surface.fill((0,0,0))
         for image, position in self.renderlist:
             surface.blit(image, position)
+            
+    def incoming_data(self, data):
+        if data.startswith('#'):
+            d = data.split()
+            if data.startswith('#Names'):
+                self.online = d[1:]
+            elif data.startswith('#User'):
+                self.online.append(d[1])
+            elif data.startswith('#Disconnected'):
+                if d[1] in self.online:
+                    self.online.remove(d[1])
+                    self.wordlist.append(d[1] + ' has left')
+                    self.render
+        else:
+            self.wordlist.append(data)
+            self.render()
         
     def update(self, tick):
         if network.chat_engine.connection.stream:
             if network.chat_engine.connection.stream.running:
-                data = network.chat_engine.connection.stream.get()
-                if data:
-                    if data.startswith('#'):
-                        d = data.split()
-                        if data.startswith('#Names'):
-                            self.online = d[1:]
-                        elif data.startswith('#User'):
-                            self.online.append(d[1])
-                        elif data.startswith('#Disconnected'):
-                            if d[1] in self.online:
-                                self.online.remove(d[1])
-                                self.wordlist.append(d[1] + ' has left')
-                                self.render
-                    else:
-                        self.wordlist.append(data)
-                        self.render()
+                network.chat_engine.connection.stream.get(self.incoming_data)
             else:
                 network.chat_engine.connection.stream = None
                 self.wordlist.append('You been disconnected')

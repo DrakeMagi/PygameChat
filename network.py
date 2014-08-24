@@ -9,13 +9,12 @@ class Chatter(object):
         self.queue = Queue.Queue()
         
     def send(self, data):
-        self.queue.put(data)
-        self.queue.task_done()
+        self.queue.put(data)        
 
-    def get(self):
-        if self.queue.empty():
-            return None
-        return self.queue.get()
+    def get(self, function):
+        if not self.queue.empty():
+            function(self.queue.get())
+            self.queue.task_done()
 
 class chat_engine(object):
     socket_names = {}
@@ -58,24 +57,21 @@ class Host(tcp_network.Server):
                 chat_engine.users[name].send(data)
         
         self.recieved.put(data)
-        self.recieved.task_done()
         
     def broadcasting(self, socket):
+        def sending(data):
+            try:
+                socket.send(data)
+            except:
+                self.socket_disconnected(socket)
+                
         if socket != self.sock:
             if socket in self.socket_list:
                 if socket in self.waiting_chattername.keys():
-                    data = self.waiting_chattername[socket].get()
+                    self.waiting_chattername[socket].get(sending)
                 elif socket in chat_engine.socket_names.keys():
                     name = chat_engine.socket_names[socket]
-                    data = chat_engine.users[name].get()
-                else:
-                    data = None
-
-                if data:
-                    try:
-                        socket.send(data)
-                    except:
-                        self.socket_disconnected(socket)
+                    chat_engine.users[name].get(sending)
                         
     def socket_disconnected(self, socket):
         if socket in self.socket_list:
@@ -91,10 +87,10 @@ class Host(tcp_network.Server):
                 name = chat_engine.socket_names[player_socket]
                 chat_engine.users[name].send(data)
 
-    def get(self):
-        if self.recieved.empty():
-            return None
-        return self.recieved.get()
+    def get(self, function):
+        if not self.recieved.empty():
+            function(self.recieved.get())
+            self.recieved.task_done()
 
     def stop(self):
         self.running = False
@@ -110,8 +106,8 @@ class Client(tcp_network.Client):
 
     def sending(self, socket):
         if not self.outgoing.empty():
-            data = self.outgoing.get()
-            socket.send(data)
+            socket.send(self.outgoing.get())
+            self.outgoing.task_done()      
 
     def recieving(self, data):
         if data.startswith('@@'):
@@ -120,17 +116,14 @@ class Client(tcp_network.Client):
                 self.send('@@Name ' + chat_engine.name)
         else:
             self.recieved.put(data)
-            self.recieved.task_done()
 
     def send(self, data):
         self.outgoing.put(data)
-        self.outgoing.task_done()
 
-    def get(self):
-        if self.recieved.empty():
-            return None
-
-        return self.recieved.get()
+    def get(self, function):
+        if not self.recieved.empty():
+            function(self.recieved.get())
+            self.recieved.task_done()
 
     def stop(self):
         self.running = False    

@@ -14,6 +14,5 @@ PygameChat
 () are optional.
 
 This is something I'm playing with. To learn networking.
+It is now fully working. Probably could use more features and a nicer layout.
 
-* TODO
- * display user connected

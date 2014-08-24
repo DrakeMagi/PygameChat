@@ -53,7 +53,7 @@ class Host(tcp_network.Server):
     def broadcast(self, socket, data):
         for player_socket in self.socket_list:
             if player_socket != self.sock and player_socket != socket:
-                name = chat_engine.users[player_socket]
+                name = chat_engine.socket_names[player_socket]
                 chat_engine.users[name].send(data)
         
         self.recieved.put(data)

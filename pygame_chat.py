@@ -17,13 +17,23 @@ def get_connection(data):
         port = 9012
         
     return host, port
+    
+class Name(object):
+    font = pygame.font.Font(None, 30)
+    
+    def __init__(self, name):
+        self.render = self.font.render(name, 1, (0,100,200))
+        self.position = None
+        
+    def blit(self, surface):
+        surface.blit(self.render, self.position)
 
 class Chat(screen.Scene):
     def __init__(self):
         screen.Scene.__init__(self)
         self.wordlist = []
         self.renderlist = []
-        self.online = []
+        self.online = {}
         self.text_color = (255,255,255)
         
         self.internal_font = pygame.font.Font(None, 24)
@@ -73,18 +83,27 @@ class Chat(screen.Scene):
         for image, position in self.renderlist:
             surface.blit(image, position)
             
+        for name in self.online.iterkeys():
+            self.online[name].blit(surface)
+            
     def incoming_data(self, data):
         if data.startswith('#'):
             d = data.split()
             if data.startswith('#Names'):
-                self.online = d[1:]
+                for name in d[1:]:
+                    if name != network.chat_engine.name:
+                        self.online[name] = Name(name)
+                        self.render_names()
             elif data.startswith('#User'):
-                self.online.append(d[1])
+                name = d[1]
+                self.online[name] = Name(name)
+                self.render_names()
             elif data.startswith('#Disconnected'):
                 if d[1] in self.online:
-                    self.online.remove(d[1])
+                    del self.online[d[1]]
+                    self.render_names()
                     self.wordlist.append(d[1] + ' has left')
-                    self.render
+                    self.render()
         else:
             self.wordlist.append(data)
             self.render()
@@ -97,6 +116,16 @@ class Chat(screen.Scene):
                 network.chat_engine.connection.stream = None
                 self.wordlist.append('You been disconnected')
                 self.render()
+                self.online.clear()
+                
+    def render_names(self):
+        keys = self.online.keys()
+        keys.sort()
+        
+        y = 50
+        for key in keys:
+            self.online[key].position = (610, y)
+            y += 40
         
     def render(self):
         self.renderlist = []
